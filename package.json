@@ -1,15 +1,24 @@
 {
-  "name": "js_sampquery",
+  "name": "sampquery",
   "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
+  "description": "A tool for interact with SA-MP Queries",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx tsc",
+    "clean": "rm -rf dist/*.*"
   },
   "author": "LouzinDeev",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.2.3",
     "typescript": "^5.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LouzinDeev/sampquery-ts.git"
   }
 }

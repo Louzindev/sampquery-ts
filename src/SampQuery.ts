@@ -1,37 +1,12 @@
 import udp from 'node:dgram';
 
+import { E_SAMPQUERY_ERROR, sampqueryErrorInterface, serverClientListPacket, serverDetailedInformationPacket, serverInformationPacket, serverRulesPacket } from './types';
 const { Buffer } = require('node:buffer');
 
 const incomming_packet_len = 11;
 const outgoing_packet_len = 512;
 
-export interface serverInformationPacket {
-    isPassworded : boolean,
-    maxPlayers : number,
-    playerCount : number,
-    hostname : string,
-    gamemode : string,
-    language : string
-};
-
-export interface serverRulesPacket {
-    ruleName: string,
-    ruleValue: string
-};
-
-export interface serverDetailedInformationPacket {
-    playerId: number,
-    playerName: string,
-    playerScore: number,
-    playerPing: number
-};
-
-export interface serverClientListPacket {
-    name: string,
-    score: number
-};
-
-export class SampQuery {
+class SampQuery {
     private ip : string;
     private port : number;
     constructor(ipaddress : string, port : number) {
@@ -78,18 +53,29 @@ export class SampQuery {
             try {
                 socket.send(packet, this.port, this.ip, (error, number) => {
                     if(error) {
+                        const resp: sampqueryErrorInterface = {
+                            errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
+                            data: `${error}`
+                        }
                         console.log(error);
+                        return reject(resp);
                     }
-                    console.log("Socket sended");
                 });
             } catch(error) {
-                console.log(error);
-                return 0;
+                const resp: sampqueryErrorInterface = {
+                    errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
+                    data: `${error}`
+                }
+                return reject(resp);
             }
     
             var timeout = setTimeout(() => {
                 socket.close();
-                return console.log("[error] host unavailable - " + this.ip + ":" + this.port);
+                const resp: sampqueryErrorInterface = {
+                    errorID: E_SAMPQUERY_ERROR.INVALID_HOST,
+                    data: "[error] host unavailable - " + this.ip + ":" + this.port
+                }
+                return reject(resp);
             }, 2000);
     
             socket.on('message', (msg) => {
@@ -97,111 +83,126 @@ export class SampQuery {
                 if(timeout) 
                     clearTimeout(timeout);
                 if(msg.length < 11) {
-                    return reject(undefined);
+                    const resp: sampqueryErrorInterface = {
+                        errorID: E_SAMPQUERY_ERROR.INVALID_PACKET_LEN,
+                        data: "Received an Packet len < 11"
+                    }
+                    return reject(resp);
                 }
                 socket.close();
                 const packet = msg.slice(11);
                 
                 var offset = 0;
                 
-                if(opcode === 'i') {
-                    const isPassworded:boolean = !!packet.readUInt8(offset);
-                    offset += 1;
-                    const playerCount:number = packet.readUInt16LE(offset);
-                    offset += 2;
-                    const maxPlayers:number = packet.readUInt16LE(offset);
-                    offset += 2;
-                    const hostnameLen:number = packet.readUInt32LE(offset);
-                    offset += 4;
-                    const hostname:string = packet.slice(offset, offset += hostnameLen).toString();
+                switch (opcode) {
+                    case 'i': {
+                        const isPassworded:boolean = !!packet.readUInt8(offset);
+                        offset += 1;
+                        const playerCount:number = packet.readUInt16LE(offset);
+                        offset += 2;
+                        const maxPlayers:number = packet.readUInt16LE(offset);
+                        offset += 2;
+                        const hostnameLen:number = packet.readUInt32LE(offset);
+                        offset += 4;
+                        const hostname:string = packet.slice(offset, offset += hostnameLen).toString();
 
-                    const gamemodeLen:number = packet.readUInt32LE(offset);
-                    offset += 4;
-                    const gamemode:string = packet.slice(offset, offset += gamemodeLen).toString();
+                        const gamemodeLen:number = packet.readUInt32LE(offset);
+                        offset += 4;
+                        const gamemode:string = packet.slice(offset, offset += gamemodeLen).toString();
 
-                    const languageLen:number = packet.readUint32LE(offset);
-                    offset += 4;
-                    const language:string = packet.slice(offset, offset += languageLen).toString();
+                        const languageLen:number = packet.readUint32LE(offset);
+                        offset += 4;
+                        const language:string = packet.slice(offset, offset += languageLen).toString();
 
-                    var object : serverInformationPacket = {
-                        isPassworded: isPassworded,
-                        playerCount: playerCount,
-                        maxPlayers: maxPlayers,
-                        hostname: hostname,
-                        gamemode: gamemode,
-                        language: language,
-                    };
-                    return resolve(object);
-                } else if(opcode === 'r') {
-                    var array : Array<serverRulesPacket> = new Array<serverRulesPacket>();
-                    var itemCount = packet.readUInt16LE(offset);
-                    offset += 2;
-
-                    for(var i = 0; i < itemCount; i++) 
-                    {
-                        const ruleNameLen = packet.readUInt8(offset);
-                        const ruleName = packet.slice(++offset, offset += ruleNameLen).toString();
-
-                        const ruleValueLen = packet.readUInt8(offset);
-                        const ruleValue = packet.slice(++offset, offset += ruleValueLen).toString();
-
-                        const rule : serverRulesPacket = {
-                            ruleName: ruleName,
-                            ruleValue: ruleValue
+                        var object : serverInformationPacket = {
+                            isPassworded: isPassworded,
+                            playerCount: playerCount,
+                            maxPlayers: maxPlayers,
+                            hostname: hostname,
+                            gamemode: gamemode,
+                            language: language,
                         };
-                       array.push(rule);
+                        return resolve(object);
+                        break;
                     }
-                    return resolve(array);
-                    
-                } else if(opcode === 'd') {
-                    var playerArray : Array<serverDetailedInformationPacket> = new Array<serverDetailedInformationPacket>();
-                    var playerCount: number = packet.readUint16LE(offset);
-                    offset += 2;
 
-                    for(var i=0; i<playerCount; ++i) {
-                        const playerId:number = packet.readUInt8(offset);
+                    case 'r': {
+                        var array : Array<serverRulesPacket> = new Array<serverRulesPacket>();
+                        var itemCount = packet.readUInt16LE(offset);
+                        offset += 2;
 
-                        const playerNameLen:number = packet.readUInt8(++offset);
-                        const playerName = packet.slice(++offset, offset += playerNameLen).toString();
+                        for(var i = 0; i < itemCount; i++) 
+                        {
+                            const ruleNameLen = packet.readUInt8(offset);
+                            const ruleName = packet.slice(++offset, offset += ruleNameLen).toString();
 
-					    const playerScore = packet.readUInt16LE(offset);
-					    const playerPing = packet.readUInt16LE(offset += 4);
+                            const ruleValueLen = packet.readUInt8(offset);
+                            const ruleValue = packet.slice(++offset, offset += ruleValueLen).toString();
 
-                        const playerObj : serverDetailedInformationPacket = {
-                            playerId: playerId,
-                            playerName: playerName,
-                            playerScore: playerScore,
-                            playerPing: playerPing
+                            const rule : serverRulesPacket = {
+                                ruleName: ruleName,
+                                ruleValue: ruleValue
+                            };
+                            array.push(rule);
                         }
-                        offset += 4;
-                        playerArray.push(playerObj);
+                        return resolve(array);
+                        break;
                     }
-                    return resolve(playerArray);
 
-                } else if(opcode === 'c') {
-                    var clientArray:Array<serverClientListPacket> = new Array<serverClientListPacket>();
-                    var clientCount:number = packet.readUInt16LE(offset);
-                    offset += 2;
-                    for(var i = 0; i < clientCount; i++)
-                    {
-                        var playerNameLen = packet.readUInt8(offset);
-                        var playerName = packet.slice(++offset, offset += playerNameLen).toString();
-                        const playerScore = packet.readUInt16LE(offset);
-                        offset += 4;
+                    case 'd': {
+                        var playerArray : Array<serverDetailedInformationPacket> = new Array<serverDetailedInformationPacket>();
+                        var playerCount: number = packet.readUint16LE(offset);
+                        offset += 2;
 
-                        const clientObj : serverClientListPacket = {
-                            name: playerName,
-                            score: playerScore
+                        for(var i=0; i<playerCount; ++i) {
+                            const playerId:number = packet.readUInt8(offset);
+
+                            const playerNameLen:number = packet.readUInt8(++offset);
+                            const playerName = packet.slice(++offset, offset += playerNameLen).toString();
+
+                            const playerScore = packet.readUInt16LE(offset);
+                            const playerPing = packet.readUInt16LE(offset += 4);
+
+                            const playerObj : serverDetailedInformationPacket = {
+                                playerId: playerId,
+                                playerName: playerName,
+                                playerScore: playerScore,
+                                playerPing: playerPing
+                            }
+                            offset += 4;
+                            playerArray.push(playerObj);
                         }
-
-                        clientArray.push(clientObj);
+                        return resolve(playerArray);
+                        break;
                     }
-                    return resolve(clientArray);
-                } else {
-                    console.log('Not defined');
-                    return 0;
+
+                    case 'c': {
+                        var clientArray:Array<serverClientListPacket> = new Array<serverClientListPacket>();
+                        var clientCount:number = packet.readUInt16LE(offset);
+                        offset += 2;
+                        for(var i = 0; i < clientCount; i++)
+                        {
+                            var playerNameLen = packet.readUInt8(offset);
+                            var playerName = packet.slice(++offset, offset += playerNameLen).toString();
+                            const playerScore = packet.readUInt16LE(offset);
+                            offset += 4;
+
+                            const clientObj : serverClientListPacket = {
+                                name: playerName,
+                                score: playerScore
+                            }
+
+                            clientArray.push(clientObj);
+                        }
+                        return resolve(clientArray);
+                        break;
+                    }
+                    default:
+                        break;
                 }
             })
         });
     }
 };
+
+export default SampQuery;
