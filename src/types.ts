@@ -1,4 +1,4 @@
-interface serverInformationPacket {
+export interface serverInformationPacket {
     isPassworded : boolean,
     maxPlayers : number,
     playerCount : number,
@@ -7,33 +7,31 @@ interface serverInformationPacket {
     language : string
 };
 
-interface serverRulesPacket {
+export interface serverRulesPacket {
     ruleName: string,
     ruleValue: string
 };
 
-interface serverDetailedInformationPacket {
+export interface serverDetailedInformationPacket {
     playerId: number,
     playerName: string,
     playerScore: number,
     playerPing: number
 };
 
-interface serverClientListPacket {
+export interface serverClientListPacket {
     name: string,
     score: number
 };
 
-enum E_SAMPQUERY_ERROR {
+export enum E_SAMPQUERY_ERROR {
     NONE = 0,
     SOCKET_ERROR = 1,
     INVALID_HOST = 2,
     INVALID_PACKET_LEN = 3
 }
 
-interface sampqueryErrorInterface {
+export interface sampqueryErrorInterface {
     errorID: E_SAMPQUERY_ERROR,
     data: string
 }
-
-export { serverInformationPacket, serverRulesPacket, serverDetailedInformationPacket, serverClientListPacket, sampqueryErrorInterface, E_SAMPQUERY_ERROR };

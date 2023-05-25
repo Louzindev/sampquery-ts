@@ -1,15 +1,16 @@
 {
   "name": "@louzindeev/sampquery",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A tool for interact with SA-MP Queries",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "main": "./lib/cjs/index.js",
+  "module": "./lib/ems/index.js",
+  "types": "./lib/esm/index.d.ts",
   "scripts": {
-    "build": "npx tsc",
-    "clean": "rm -rf dist/*.*"
+    "build": "npm run build:esm && npm run build:csj",
+    "build:esm": "npx tsc",
+    "build:csj": "npx tsc --module commonjs --outDir lib/cjs",
+    "clean": "rm -rf ./lib/*",
+    "prepare": "npm run clean && npm run build"
   },
   "author": "LouzinDeev",
   "license": "ISC",
@@ -20,5 +21,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/LouzinDeev/sampquery-ts.git"
-  }
+  },
+  "files": [
+    "lib"
+  ]
 }
