@@ -1,5 +1,5 @@
 {
-  "name": "sampquery",
+  "name": "@louzindeev/sampquery",
   "version": "1.0.0",
   "description": "A tool for interact with SA-MP Queries",
   "main": "dist/index.js",
