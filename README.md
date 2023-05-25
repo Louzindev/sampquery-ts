@@ -1,2 +1,2 @@
 # sampquery
-> a typescript class made to work with samp queries.
+> A tool for interact with SA-MP Queries
