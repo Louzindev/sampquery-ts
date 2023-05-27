@@ -16,3 +16,5 @@ samp.getServerInformation().then((info) => {
     console.log(info);
 });
 ```
+
+## [Wiki](https://github.com/LouzinDeev/sampquery-ts/wiki)
