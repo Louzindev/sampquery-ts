@@ -35,3 +35,5 @@ export interface sampqueryErrorInterface {
     errorID: E_SAMPQUERY_ERROR,
     data: string
 }
+
+export type sampqueryCallbackType = (info, err) => void;

@@ -1,19 +1,25 @@
 # sampquery
+
 > A tool for interact with SA-MP Queries
 
 ## Instalation
+
 > `npm install @louzindeev/sampquery ` and, done xD.
 
 ## Simple Example
 
 ### Getting Server info.
+
 ```js
 const sampquery = require("@louzindeev/sampquery");
+const server = new squery.SampQuery("127.0.0.1", 7777); // Local ;)
 
-const samp = new sampquery.SampQuery("127.0.0.1", 7777); // local ... ;)
-
-samp.getServerInformation().then((info) => {
-    console.log(info);
+server.getServerInformation((info, err) => {
+  if (err) {
+    console.log(err);
+    return;
+  }
+  console.log(info);
 });
 ```
 

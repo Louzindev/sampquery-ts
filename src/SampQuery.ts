@@ -1,7 +1,7 @@
 import udp from 'node:dgram';
+import { Buffer } from "node:buffer"
+import { E_SAMPQUERY_ERROR, sampqueryErrorInterface, serverClientListPacket, serverDetailedInformationPacket, serverInformationPacket, serverRulesPacket, sampqueryCallbackType } from './types';
 
-import { E_SAMPQUERY_ERROR, sampqueryErrorInterface, serverClientListPacket, serverDetailedInformationPacket, serverInformationPacket, serverRulesPacket } from './types';
-const { Buffer } = require('node:buffer');
 
 const incomming_packet_len = 11;
 const outgoing_packet_len = 512;
@@ -14,24 +14,91 @@ class SampQuery {
         this.port = port;
     }
 
-    public async getServerInformation() : Promise<serverInformationPacket> {
-        const serverInformation : serverInformationPacket = await this.request('i');
-        return serverInformation;
+    public async getServerInformation(callback: sampqueryCallbackType) {
+        this.request('i').then((info) => {
+            callback(info, 0);
+        }).catch((error: sampqueryErrorInterface) => {
+            callback(0, error);
+        });
     }
 
-    public async getServerRules() : Promise<Array<serverRulesPacket>> {
-        var rules : Array<serverRulesPacket> = await this.request('r');
-        return rules;
+    public async getServerRules(callback: sampqueryCallbackType) {
+        this.request('r').then((rules) => {
+            callback(rules, 0);
+        }).catch((error: sampqueryErrorInterface) => {
+            callback(0, error);
+        });
     }
 
-    public async getServerDetailedInformation() : Promise<Array<serverDetailedInformationPacket>> {
-        const detailedInformation : Array<serverDetailedInformationPacket> = await this.request('d');
-        return detailedInformation;
-    };
+    public async getServerDetailedInformation(callback: sampqueryCallbackType) {
+        this.request('d').then((detailedInformation) => {
+            callback(detailedInformation, 0);
+        }).catch((error: sampqueryErrorInterface) => {
+            callback(0, error);
+        });
+    }
 
-    public async getServerClientList() : Promise<Array<serverClientListPacket>> {
-        const clientList : Array<serverClientListPacket> = await this.request('c');
-        return clientList;
+    public async getServerClientList(callback: sampqueryCallbackType) {
+        this.request('c').then((clientList) => {
+            callback(clientList, 0);
+        }).catch((error: sampqueryErrorInterface) => {
+            callback(0, error);
+        });
+    }
+
+    public async sendRCON(password: string, command: string) {
+        return this.rconRequest(password, command);
+    }
+
+    public rconRequest(password: string, command: string) : any {
+        return new Promise((resolve, reject) => {
+            const socket = udp.createSocket('udp4');
+            const packet = Buffer.alloc(incomming_packet_len + 23);
+            var offser: number;
+            packet.write("SAMP");
+            packet.writeUint8((this.ip.split('.')[0] as any), 4);
+            packet.writeUint8((this.ip.split('.')[1] as any), 5);
+            packet.writeUint8((this.ip.split('.')[2] as any), 6);
+            packet.writeUint8((this.ip.split('.')[3] as any), 7);
+
+            packet.writeUint8((this.port & 0xFF), 8);
+            packet.writeUint8((this.port >> 8 & 0xFF), 9);
+
+            const opcode: string = "x";
+            packet.writeUint8(opcode.charCodeAt(0), 10);
+
+            packet.writeUIntLE((password.length & 0xFF), 11, 1);
+            packet.writeUIntLE((password.length >> 8 & 0xFF), 12, 1);
+            packet.write(password, 13);
+            let offset: number = 13 + password.length;
+            packet.writeUInt8((command.length & 0xFF), offset);
+            ++offset;
+            packet.writeUInt8((command.length >> 8 & 0xFF), offset);
+            ++offset;
+            packet.write(command, offset);
+
+            console.log(packet);
+            try {
+                socket.send(packet, this.port, this.ip, (error) => {
+                    if(error) {
+                        const resp: sampqueryErrorInterface = {
+                            errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
+                            data: `${error}`
+                        }
+                        console.log(error);
+                        return reject(resp);
+                    }
+                    console.log("Yeah");
+                    return resolve(1);
+                })
+            } catch(error: any) {
+                const resp: sampqueryErrorInterface = {
+                    errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
+                    data: `${error}`
+                }
+                return reject(resp);
+            }
+        });
     }
 
     private request(opcode : string) : any {
@@ -40,15 +107,15 @@ class SampQuery {
             const packet = Buffer.alloc(incomming_packet_len);
 
             packet.write("SAMP");
-            packet[4] = this.ip.split('.')[0];
-            packet[5] = this.ip.split('.')[1];
-            packet[6] = this.ip.split('.')[2];
-            packet[7] = this.ip.split('.')[3];
+            packet.writeUint8((this.ip.split('.')[0] as any), 4);
+            packet.writeUint8((this.ip.split('.')[1] as any), 5);
+            packet.writeUint8((this.ip.split('.')[2] as any), 6);
+            packet.writeUint8((this.ip.split('.')[3] as any), 7);
 
-            packet[8] = (this.port & 0xFF);
-            packet[9] = (this.port >> 8 & 0xFF);
+            packet.writeUInt8((this.port & 0xFF), 8);
+            packet.writeUInt8((this.port >> 8 & 0xFF), 9);
             
-            packet[10] = opcode.charCodeAt(0);
+            packet.writeUInt8(opcode.charCodeAt(0), 10);
 
             try {
                 socket.send(packet, this.port, this.ip, (error, number) => {
@@ -61,7 +128,7 @@ class SampQuery {
                         return reject(resp);
                     }
                 });
-            } catch(error) {
+            } catch(error: any) {
                 const resp: sampqueryErrorInterface = {
                     errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
                     data: `${error}`

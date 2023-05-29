@@ -1,6 +1,6 @@
 {
   "name": "@louzindeev/sampquery",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "A tool for interact with SA-MP Queries",
   "main": "./lib/cjs/index.js",
   "module": "./lib/ems/index.js",
