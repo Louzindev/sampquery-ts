@@ -7,9 +7,9 @@ const incomming_packet_len = 11;
 const outgoing_packet_len = 512;
 
 class SampQuery {
-    private ip : string;
-    private port : number;
-    constructor(ipaddress : string, port : number) {
+    private ip: string;
+    private port: number;
+    constructor(ipaddress: string, port: number) {
         this.ip = ipaddress;
         this.port = port;
     }
@@ -46,15 +46,19 @@ class SampQuery {
         });
     }
 
-    public async sendRCON(password: string, command: string) {
-        return this.rconRequest(password, command);
+    public async sendRCONCommand(password: string, command: string, callback?: sampqueryCallbackType) {
+        this.rconRequest(password, command).then((info) => {
+            if(callback) callback(info, 0);
+        }).catch((err) => {
+            const error: sampqueryErrorInterface = err;
+            if(callback) callback(0, err);
+        });
     }
 
-    public rconRequest(password: string, command: string) : any {
+    private rconRequest(password: string, command: string): any {
         return new Promise((resolve, reject) => {
             const socket = udp.createSocket('udp4');
-            const packet = Buffer.alloc(incomming_packet_len + 23);
-            var offser: number;
+            const packet = Buffer.alloc((incomming_packet_len + 4) + (password.length + command.length));
             packet.write("SAMP");
             packet.writeUint8((this.ip.split('.')[0] as any), 4);
             packet.writeUint8((this.ip.split('.')[1] as any), 5);
@@ -67,8 +71,8 @@ class SampQuery {
             const opcode: string = "x";
             packet.writeUint8(opcode.charCodeAt(0), 10);
 
-            packet.writeUIntLE((password.length & 0xFF), 11, 1);
-            packet.writeUIntLE((password.length >> 8 & 0xFF), 12, 1);
+            packet.writeUint8((password.length & 0xFF), 11);
+            packet.writeUint8((password.length >> 8 & 0xFF), 12);
             packet.write(password, 13);
             let offset: number = 13 + password.length;
             packet.writeUInt8((command.length & 0xFF), offset);
@@ -76,32 +80,21 @@ class SampQuery {
             packet.writeUInt8((command.length >> 8 & 0xFF), offset);
             ++offset;
             packet.write(command, offset);
-
-            console.log(packet);
-            try {
-                socket.send(packet, this.port, this.ip, (error) => {
-                    if(error) {
-                        const resp: sampqueryErrorInterface = {
-                            errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
-                            data: `${error}`
-                        }
-                        console.log(error);
-                        return reject(resp);
+            socket.send(packet, this.port, this.ip, (error, number) => {
+                if (error) {
+                    const resp: sampqueryErrorInterface = {
+                        errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
+                        data: `${error}`
                     }
-                    console.log("Yeah");
-                    return resolve(1);
-                })
-            } catch(error: any) {
-                const resp: sampqueryErrorInterface = {
-                    errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
-                    data: `${error}`
+                    console.log(error);
+                    return reject(resp);
                 }
-                return reject(resp);
-            }
+                return resolve(packet);
+            });
         });
     }
 
-    private request(opcode : string) : any {
+    private request(opcode: string): any {
         return new Promise((resolve, reject) => {
             const socket = udp.createSocket('udp4');
             const packet = Buffer.alloc(incomming_packet_len);
@@ -114,12 +107,12 @@ class SampQuery {
 
             packet.writeUInt8((this.port & 0xFF), 8);
             packet.writeUInt8((this.port >> 8 & 0xFF), 9);
-            
+
             packet.writeUInt8(opcode.charCodeAt(0), 10);
 
             try {
                 socket.send(packet, this.port, this.ip, (error, number) => {
-                    if(error) {
+                    if (error) {
                         const resp: sampqueryErrorInterface = {
                             errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
                             data: `${error}`
@@ -128,14 +121,14 @@ class SampQuery {
                         return reject(resp);
                     }
                 });
-            } catch(error: any) {
+            } catch (error: any) {
                 const resp: sampqueryErrorInterface = {
                     errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
                     data: `${error}`
                 }
                 return reject(resp);
             }
-    
+
             var timeout = setTimeout(() => {
                 socket.close();
                 const resp: sampqueryErrorInterface = {
@@ -144,12 +137,12 @@ class SampQuery {
                 }
                 return reject(resp);
             }, 2000);
-    
+
             socket.on('message', (msg) => {
-    
-                if(timeout) 
+
+                if (timeout)
                     clearTimeout(timeout);
-                if(msg.length < 11) {
+                if (msg.length < 11) {
                     const resp: sampqueryErrorInterface = {
                         errorID: E_SAMPQUERY_ERROR.INVALID_PACKET_LEN,
                         data: "Received an Packet len < 11"
@@ -158,30 +151,30 @@ class SampQuery {
                 }
                 socket.close();
                 const packet = msg.slice(11);
-                
+
                 var offset = 0;
-                
+
                 switch (opcode) {
                     case 'i': {
-                        const isPassworded:boolean = !!packet.readUInt8(offset);
+                        const isPassworded: boolean = !!packet.readUInt8(offset);
                         offset += 1;
-                        const playerCount:number = packet.readUInt16LE(offset);
+                        const playerCount: number = packet.readUInt16LE(offset);
                         offset += 2;
-                        const maxPlayers:number = packet.readUInt16LE(offset);
+                        const maxPlayers: number = packet.readUInt16LE(offset);
                         offset += 2;
-                        const hostnameLen:number = packet.readUInt32LE(offset);
+                        const hostnameLen: number = packet.readUInt32LE(offset);
                         offset += 4;
-                        const hostname:string = packet.slice(offset, offset += hostnameLen).toString();
+                        const hostname: string = packet.slice(offset, offset += hostnameLen).toString();
 
-                        const gamemodeLen:number = packet.readUInt32LE(offset);
+                        const gamemodeLen: number = packet.readUInt32LE(offset);
                         offset += 4;
-                        const gamemode:string = packet.slice(offset, offset += gamemodeLen).toString();
+                        const gamemode: string = packet.slice(offset, offset += gamemodeLen).toString();
 
-                        const languageLen:number = packet.readUint32LE(offset);
+                        const languageLen: number = packet.readUint32LE(offset);
                         offset += 4;
-                        const language:string = packet.slice(offset, offset += languageLen).toString();
+                        const language: string = packet.slice(offset, offset += languageLen).toString();
 
-                        var object : serverInformationPacket = {
+                        var object: serverInformationPacket = {
                             isPassworded: isPassworded,
                             playerCount: playerCount,
                             maxPlayers: maxPlayers,
@@ -194,19 +187,18 @@ class SampQuery {
                     }
 
                     case 'r': {
-                        var array : Array<serverRulesPacket> = new Array<serverRulesPacket>();
+                        var array: Array<serverRulesPacket> = new Array<serverRulesPacket>();
                         var itemCount = packet.readUInt16LE(offset);
                         offset += 2;
 
-                        for(var i = 0; i < itemCount; i++) 
-                        {
+                        for (var i = 0; i < itemCount; i++) {
                             const ruleNameLen = packet.readUInt8(offset);
                             const ruleName = packet.slice(++offset, offset += ruleNameLen).toString();
 
                             const ruleValueLen = packet.readUInt8(offset);
                             const ruleValue = packet.slice(++offset, offset += ruleValueLen).toString();
 
-                            const rule : serverRulesPacket = {
+                            const rule: serverRulesPacket = {
                                 ruleName: ruleName,
                                 ruleValue: ruleValue
                             };
@@ -217,20 +209,20 @@ class SampQuery {
                     }
 
                     case 'd': {
-                        var playerArray : Array<serverDetailedInformationPacket> = new Array<serverDetailedInformationPacket>();
+                        var playerArray: Array<serverDetailedInformationPacket> = new Array<serverDetailedInformationPacket>();
                         var playerCount: number = packet.readUint16LE(offset);
                         offset += 2;
 
-                        for(var i=0; i<playerCount; ++i) {
-                            const playerId:number = packet.readUInt8(offset);
+                        for (var i = 0; i < playerCount; ++i) {
+                            const playerId: number = packet.readUInt8(offset);
 
-                            const playerNameLen:number = packet.readUInt8(++offset);
+                            const playerNameLen: number = packet.readUInt8(++offset);
                             const playerName = packet.slice(++offset, offset += playerNameLen).toString();
 
                             const playerScore = packet.readUInt16LE(offset);
                             const playerPing = packet.readUInt16LE(offset += 4);
 
-                            const playerObj : serverDetailedInformationPacket = {
+                            const playerObj: serverDetailedInformationPacket = {
                                 playerId: playerId,
                                 playerName: playerName,
                                 playerScore: playerScore,
@@ -244,17 +236,16 @@ class SampQuery {
                     }
 
                     case 'c': {
-                        var clientArray:Array<serverClientListPacket> = new Array<serverClientListPacket>();
-                        var clientCount:number = packet.readUInt16LE(offset);
+                        var clientArray: Array<serverClientListPacket> = new Array<serverClientListPacket>();
+                        var clientCount: number = packet.readUInt16LE(offset);
                         offset += 2;
-                        for(var i = 0; i < clientCount; i++)
-                        {
+                        for (var i = 0; i < clientCount; i++) {
                             var playerNameLen = packet.readUInt8(offset);
                             var playerName = packet.slice(++offset, offset += playerNameLen).toString();
                             const playerScore = packet.readUInt16LE(offset);
                             offset += 4;
 
-                            const clientObj : serverClientListPacket = {
+                            const clientObj: serverClientListPacket = {
                                 name: playerName,
                                 score: playerScore
                             }
