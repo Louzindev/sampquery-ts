@@ -11,7 +11,7 @@
 ### Getting Server info.
 
 ```js
-const sampquery = require("@louzindeev/sampquery");
+const squery = require("@louzindeev/sampquery");
 const server = new squery.SampQuery("127.0.0.1", 7777); // Local ;)
 
 server.getServerInformation((info, err) => {
