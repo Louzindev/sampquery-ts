@@ -28,7 +28,8 @@ export enum E_SAMPQUERY_ERROR {
     NONE = 0,
     SOCKET_ERROR = 1,
     INVALID_HOST = 2,
-    INVALID_PACKET_LEN = 3
+    INVALID_PACKET_LEN = 3,
+    INVALID_RCON_PASSWORD = 4
 }
 
 export interface sampqueryErrorInterface {

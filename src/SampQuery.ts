@@ -46,15 +46,19 @@ class SampQuery {
         });
     }
 
-    public async sendRCON(password: string, command: string) {
-        return this.rconRequest(password, command);
+    public async sendRCON(password: string, command: string, callback: sampqueryCallbackType) {
+        this.rconRequest(password, command).then((response) => {
+            callback(response, 0);
+        }).catch((error: sampqueryErrorInterface) => {
+            callback(0, error);
+        });
     }
 
-    public rconRequest(password: string, command: string) : any {
+    private rconRequest(password: string, command: string) : any {
         return new Promise((resolve, reject) => {
             const socket = udp.createSocket('udp4');
-            const packet = Buffer.alloc(incomming_packet_len + 23);
-            var offser: number;
+            const packet = Buffer.alloc(incomming_packet_len + password.length + command.length + 5);
+            var offset: number;
             packet.write("SAMP");
             packet.writeUint8((this.ip.split('.')[0] as any), 4);
             packet.writeUint8((this.ip.split('.')[1] as any), 5);
@@ -67,17 +71,13 @@ class SampQuery {
             const opcode: string = "x";
             packet.writeUint8(opcode.charCodeAt(0), 10);
 
-            packet.writeUIntLE((password.length & 0xFF), 11, 1);
-            packet.writeUIntLE((password.length >> 8 & 0xFF), 12, 1);
+            packet.writeUint8((password.length & 0xFF), 11);
+            packet.writeUint8((password.length >> 8 & 0xFF), 12);
             packet.write(password, 13);
-            let offset: number = 13 + password.length;
-            packet.writeUInt8((command.length & 0xFF), offset);
-            ++offset;
-            packet.writeUInt8((command.length >> 8 & 0xFF), offset);
-            ++offset;
-            packet.write(command, offset);
+            packet.writeUInt8((command.length & 0xFF), (13 + password.length));
+            packet.writeUInt8((command.length >> 8 & 0xFF), (14 + password.length));
+            packet.write(command, 15 + password.length);
 
-            console.log(packet);
             try {
                 socket.send(packet, this.port, this.ip, (error) => {
                     if(error) {
@@ -85,11 +85,8 @@ class SampQuery {
                             errorID: E_SAMPQUERY_ERROR.SOCKET_ERROR,
                             data: `${error}`
                         }
-                        console.log(error);
                         return reject(resp);
                     }
-                    console.log("Yeah");
-                    return resolve(1);
                 })
             } catch(error: any) {
                 const resp: sampqueryErrorInterface = {
@@ -98,6 +95,28 @@ class SampQuery {
                 }
                 return reject(resp);
             }
+
+            var timeout = setTimeout(() => {
+                socket.close();
+                const resp: sampqueryErrorInterface = {
+                    errorID: E_SAMPQUERY_ERROR.INVALID_HOST,
+                    data: "[error] host unavailable - " + this.ip + ":" + this.port
+                }
+                return reject(resp);
+            }, 5000);
+
+            socket.on('message', (msg) => {
+                if(timeout)
+                    clearTimeout(timeout);
+                if(msg.slice(12).toString().includes("Invalid RCON password")) {
+                    const err: sampqueryErrorInterface = {
+                        errorID: E_SAMPQUERY_ERROR.INVALID_RCON_PASSWORD,
+                        data: "Invalid RCON password"
+                    }
+                    return reject(err);
+                }
+                return resolve("Successfully sended.");
+            })
         });
     }
 
