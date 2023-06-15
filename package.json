@@ -24,5 +24,9 @@
   },
   "files": [
     "lib"
-  ]
+  ],
+  "bugs": {
+    "url": "https://github.com/LouzinDeev/sampquery-ts/issues"
+  },
+  "homepage": "https://github.com/LouzinDeev/sampquery-ts#readme"
 }
