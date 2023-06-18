@@ -1,23 +1,31 @@
 import { 
-    serverClientListPacket, 
-    serverDetailedInformationPacket, 
-    serverInformationPacket, 
-    serverRulesPacket, 
-    sampqueryErrorInterface, 
-    sampqueryCallbackType
+    IServerAddress,
+    IInformationPacket,
+    IRulesPacket,
+    IClientListPacket,
+    IDetailedPacket,
+    IError
 } from "./types";
 
-import { E_SAMPQUERY_ERROR } from "./types";
+import { 
+    E_SAMPQUERY_PACKET_TYPE,
+    E_SAMPQUERY_ERROR
+} from "./types";
+
 import SampQuery from "./SampQuery";
 
-export {
-    serverClientListPacket,
-    serverDetailedInformationPacket,
-    serverInformationPacket,
-    serverRulesPacket,
-    sampqueryErrorInterface,
-    sampqueryCallbackType
+export { 
+    E_SAMPQUERY_PACKET_TYPE,
+    E_SAMPQUERY_ERROR
 }
 
-export { E_SAMPQUERY_ERROR }
+export {
+    IServerAddress,
+    IInformationPacket,
+    IRulesPacket,
+    IClientListPacket,
+    IDetailedPacket,
+    IError
+}
+
 export { SampQuery };

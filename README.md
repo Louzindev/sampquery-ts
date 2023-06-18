@@ -12,12 +12,15 @@
 
 ```js
 const squery = require("@devkrieger/sampquery");
-const server = new squery.SampQuery("127.0.0.1", 7777); // Local ;)
+const server = new squery.SampQuery({
+  ipaddress: "127.0.0.1",
+  port: 7778,
+  rconpassword: "louzin",
+});
 
 server.getServerInformation((info, err) => {
   if (err) {
-    console.log(err);
-    return;
+    return console.log(err);
   }
   console.log(info);
 });

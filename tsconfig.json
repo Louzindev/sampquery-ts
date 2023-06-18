@@ -9,6 +9,6 @@
     "skipLibCheck": true,           /* Skip type checking of declaration files. */
     "moduleResolution": "node"
   },
-  "include": ["src"],
+  "include": ["src", "scripts"],
   "exclude": ["node_modules"]
 }
