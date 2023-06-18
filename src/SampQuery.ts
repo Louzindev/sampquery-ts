@@ -23,32 +23,52 @@ class SampQuery {
     }
 
     public async getServerRules(callback: sampqueryCallbackType) {
-        this.request('r').then((rules) => {
-            callback(rules, 0);
+
+        this.request('i').then((info) => {
+            this.request('r').then((rules) => {
+                callback(rules, 0);
+            }).catch((error: sampqueryErrorInterface) => {
+                callback(0, error);
+            });
         }).catch((error: sampqueryErrorInterface) => {
             callback(0, error);
         });
+        
     }
 
     public async getServerDetailedInformation(callback: sampqueryCallbackType) {
-        this.request('d').then((detailedInformation) => {
-            callback(detailedInformation, 0);
+        this.request('i').then((info) => {
+            this.request('d').then((detailedInformation) => {
+                callback(detailedInformation, 0);
+            }).catch((error: sampqueryErrorInterface) => {
+                callback(0, error);
+            });
         }).catch((error: sampqueryErrorInterface) => {
             callback(0, error);
         });
+        
     }
 
     public async getServerClientList(callback: sampqueryCallbackType) {
-        this.request('c').then((clientList) => {
-            callback(clientList, 0);
+        this.request('i').then((info) => {
+            this.request('c').then((clientList) => {
+                callback(clientList, 0);
+            }).catch((error: sampqueryErrorInterface) => {
+                callback(0, error);
+            });
         }).catch((error: sampqueryErrorInterface) => {
             callback(0, error);
         });
+        
     }
 
     public async sendRCON(password: string, command: string, callback: sampqueryCallbackType) {
-        this.rconRequest(password, command).then((response) => {
-            callback(response, 0);
+        this.request('i').then((info) => {
+            this.rconRequest(password, command).then((response) => {
+                callback(response, 0);
+            }).catch((error: sampqueryErrorInterface) => {
+                callback(0, error);
+            });
         }).catch((error: sampqueryErrorInterface) => {
             callback(0, error);
         });
@@ -100,12 +120,8 @@ class SampQuery {
 
             var timeout = setTimeout(() => {
                 socket.close();
-                const resp: sampqueryErrorInterface = {
-                    errorID: E_SAMPQUERY_ERROR.INVALID_HOST,
-                    data: "[error] host unavailable - " + this.ip + ":" + this.port
-                }
-                return reject(resp);
-            }, 5000);
+                return resolve("Successfully sended.");
+            }, 2000);
 
             socket.on('message', (msg) => {
                 if(timeout)
