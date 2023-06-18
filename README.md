@@ -23,4 +23,4 @@ server.getServerInformation((info, err) => {
 });
 ```
 
-## [Wiki](https://github.com/Krieger0725/sampquery-ts/wiki)
+## [Wiki](https://github.com/KriegerDev/sampquery-ts/wiki)
