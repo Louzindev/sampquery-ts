@@ -1,5 +1,5 @@
 {
-  "name": "@louzindeev/sampquery",
+  "name": "@devkrieger/sampquery",
   "version": "2.0.1",
   "description": "A tool for interact with SA-MP Queries",
   "main": "./lib/cjs/index.js",
