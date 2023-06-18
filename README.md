@@ -4,14 +4,14 @@
 
 ## Instalation
 
-> `npm install @louzindeev/sampquery ` and, done xD.
+> `npm install @devkrieger/sampquery ` and, done xD.
 
 ## Simple Example
 
 ### Getting Server info.
 
 ```js
-const squery = require("@louzindeev/sampquery");
+const squery = require("@devkrieger/sampquery");
 const server = new squery.SampQuery("127.0.0.1", 7777); // Local ;)
 
 server.getServerInformation((info, err) => {
@@ -23,4 +23,4 @@ server.getServerInformation((info, err) => {
 });
 ```
 
-## [Wiki](https://github.com/LouzinDeev/sampquery-ts/wiki)
+## [Wiki](https://github.com/Krieger0725/sampquery-ts/wiki)
