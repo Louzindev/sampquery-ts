@@ -15,7 +15,7 @@ const squery = require("@devkrieger/sampquery");
 const server = new squery.SampQuery({
   ipaddress: "127.0.0.1",
   port: 7778,
-  rconpassword: "louzin",
+  rconpassword: "password",
 });
 
 server.getServerInformation((info, err) => {

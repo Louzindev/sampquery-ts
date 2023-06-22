@@ -1,9 +1,9 @@
 export enum E_SAMPQUERY_PACKET_TYPE {
-    INFORMATION_QUERY_PACKET = 'i',
-    RULES_QUERY_PACKET = 'r',
-    DETAILED_QUERY_PACKET = 'd',
-    CLIENTLIST_QUERY_PACKET = 'c',
-    RCON_QUERY_PACKET = 'x'
+    INFORMATION_QUERY_PACKET = 0x69,
+    RULES_QUERY_PACKET = 0x72,
+    DETAILED_QUERY_PACKET = 0x64,
+    CLIENTLIST_QUERY_PACKET = 63,
+    RCON_QUERY_PACKET = 0x78
 }
 
 export enum E_SAMPQUERY_ERROR {
@@ -49,3 +49,6 @@ export interface IError {
     errorID: E_SAMPQUERY_ERROR,
     data: string
 }
+
+export const incomming_packet_len = 11;
+export const outgoing_packet_len = 512;
